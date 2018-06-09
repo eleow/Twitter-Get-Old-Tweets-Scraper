@@ -37,6 +37,7 @@ def main(argv):
         print(examples)
         return
 
+    exporter = controllers.Exporter()
     try:
         opts, args = getopt.getopt(argv, '', ('username=', 'since=',\
                     'until=', 'query=', 'max-tweets='))
@@ -55,19 +56,19 @@ def main(argv):
             elif opt == '--max-tweets':
                 tweet_criteria.max_tweets = int(arg)
 
-        exporter = controllers.Exporter()
         miner = controllers.Scraper()
 
         miner.get_tweets(tweet_criteria, buffer = exporter.output_to_file)
-        exporter.close()
 
         text = 'Finished scraping data. Output file generated'\
             +' "tweets_gathered.csv"'
-        print(text);
+        print(text)
     except:
         text = 'Unexpected error. Please try again. For more information on'\
             + ' how to use this script, use the -help argument.'
         print(text)
+    finally:
+        exporter.close()
 
 if __name__ == '__main__':
     main(sys.argv[1:])

@@ -4,6 +4,8 @@ from datetime import datetime
 from pyquery import PyQuery as pq
 
 from .models import Tweet, TweetCriteria
+from .exceptions import ScrapperException
+
 
 class Exporter(object):
 
@@ -80,6 +82,7 @@ class Scraper(object):
         while active:
             json = Scraper.get_json_response(tweet_criteria, refresh_cursor)
 
+
             if not json or len(json['items_html'].strip()) == 0:
                 break
 
@@ -109,6 +112,7 @@ class Scraper(object):
                 href = 'https://twitter.com' + _.attr('data-permalink-path')
                 raw_date_ms =  int(_('span.js-short-timestamp')\
                                 .attr('data-time'))
+                lang = _('p.js-tweet-text').attr('lang') or ''
                 tweet_date = _('span._timestamp .js-short-timestamp').text()
                 geological_location = _('span.Tweet-geo').attr('title')\
                                     if len(_('span.Tweet-geo')) > 0 else ''
@@ -126,6 +130,7 @@ class Scraper(object):
                 tweet.user = username
                 tweet.user_handle = user_handle
                 tweet.text = text
+                tweet.lang = lang
                 tweet.date = tweet_date
                 tweet.raw_date_ms = raw_date_ms
                 tweet.date_fromtimestamp = datetime.fromtimestamp(raw_date_ms)
@@ -183,12 +188,10 @@ class Scraper(object):
 
         try:
             r = req.get(url, headers=headers)
-        except:
+        except Exception as e:
             text = 'Twitter weird response. Try to see on browser:'\
                     +'https://twitter.com/search?q=%s&src=typd'
             print(text % urllib.parse.quote(url))
             print('Unexpected error:', sys.exc_info()[0])
-            sys.exit()
-            return
-
+            raise ScrapperException(e)
         return r.json()

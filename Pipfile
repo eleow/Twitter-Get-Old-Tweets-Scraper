@@ -1,0 +1,15 @@
+[[source]]
+url = "https://pypi.python.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[dev-packages]
+ipython = "*"
+ipdb = "*"
+
+[packages]
+pyquery = "==1.2.17"
+requests = "==2.13.0"
+
+[requires]
+python_version = "3.6"

@@ -1,0 +1,2 @@
+class ScrapperException(Exception):
+    pass

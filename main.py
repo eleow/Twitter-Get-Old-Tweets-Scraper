@@ -46,7 +46,7 @@ def main(argv):
 
     try:
         opts, args = getopt.getopt(argv, '', ('username=', 'since=',\
-                    'until=', 'query=', 'max-tweets='))
+                    'until=', 'query=', 'max-tweets=', 'output-file='))
 
         tweet_criteria = models.TweetCriteria()
 
@@ -64,12 +64,11 @@ def main(argv):
             elif opt == '--output-file':
                 tweet_criteria.output_filename = arg
     except Exception as e:
-        import ipdb; ipdb.set_trace()
         text = 'Unexpected error. Please try again. For more information on'\
             + ' how to use this script, use the -help argument.'
         print(text)
 
-    exporter = controllers.Exporter()
+    exporter = controllers.Exporter(filename=tweet_criteria.output_filename)
     miner = controllers.Scraper()
 
     try:
@@ -83,8 +82,8 @@ def main(argv):
     else:
 
         text = (
-            f'Finished scraping data. Output file generated'
-            ' "{tweet_criteria.output_filename}"'
+            'Finished scraping data. Output file generated'
+            f' "{tweet_criteria.output_filename}"'
         )
         print(text)
     finally:

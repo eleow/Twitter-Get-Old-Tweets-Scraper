@@ -1,3 +1,4 @@
+import csv
 import sys, json, re, codecs, urllib.parse
 import requests as req
 from datetime import datetime
@@ -9,41 +10,47 @@ from .exceptions import ScrapperException
 
 class Exporter(object):
 
-    def __init__(self, criteria = None, filename = 'tweets_gathered.csv'):
-        file_extension = '.'.split(filename)[-1]
+    def __init__(self, criteria=None, filename='tweets_gathered.csv'):
+        if criteria and criteria.output_filename:
+            filename = criteria.output_filename
+        self.filename = filename
 
-        if not file_extension == '.csv':
-            self.filename = 'tweets_gathered.csv'
-        else:
-            self.filename = filename
-
-        self.output = codecs.open(self.filename, 'w+', 'utf-8')
-
+        # self.output = codecs.open(self.filename, 'w+', 'utf-8')
+        self.output = open(self.filename, 'w+', encoding='utf-8')
+        self.csv_writter = csv.writer(self.output, delimiter=',', quotechar='"')
         if not criteria:
             criteria = [
                 'username', 'user_handle', 'date', 'retweets',
-                'favorites', 'text', 'geological_location',
+                'favorites', 'text', 'language', 'geological_location',
                 'mentions', 'hashtags', 'tweet_id', 'permalink'
             ]
 
-        criteria_string = ','.join(criteria)
-
-        self.output.write(criteria_string)
+        criteria_sring = ','.join(criteria)
+        self.csv_writter.writerow(criteria)
 
     def output_to_file(self, tweets):
         for tweet in tweets:
-            format = '\n%s,%s,%s,%d,%d,"%s",%s,%s,%s,"%s",%s'
-            self.output.write((format % \
-            (tweet.user, tweet.user_handle,\
-            tweet.date_fromtimestamp.strftime('%Y-%m-%d %H:%M'),\
-            tweet.retweets, tweet.favorites, tweet.text,\
-            tweet.geological_location, tweet.mentions,\
-            tweet.hashtags, tweet.id, tweet.permalink)))
-        self.output.flush();
+            self.csv_writter.writerow([
+                tweet.user,
+                tweet.user_handle,
+                tweet.date_fromtimestamp.strftime('%Y-%m-%d %H:%M'),
+                tweet.retweets,
+                tweet.favorites,
+                tweet.text,
+                tweet.lang,
+                tweet.geological_location,
+                tweet.mentions,
+                tweet.hashtags,
+                tweet.id,
+                tweet.permalink
+            ])
+
+        self.output.flush()
         print ('%d tweets added to file' % len(tweets))
 
     def close(self):
         self.output.close()
+
 
 class Scraper(object):
 
@@ -52,9 +59,13 @@ class Scraper(object):
 
     @staticmethod
     def set_headers(data, language, refresh_cursor):
-        url = 'https://twitter.com/i/search/timeline?f=realtime&q=%s&src=typd'\
-                + '&%smax_position=%s'
-        url = url % (urllib.parse.quote(data), language, refresh_cursor)
+        url = 'https://twitter.com/i/search/timeline?f=realtime&q=%s&src=typd'
+        if language:
+            url += f'&{language}'
+        else:
+            url += '&'
+        url += 'max_position=%s'
+        url = url % (urllib.parse.quote(data), refresh_cursor)
         headers = {
             'Host': 'twitter.com',
             'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64)',
@@ -81,7 +92,6 @@ class Scraper(object):
 
         while active:
             json = Scraper.get_json_response(tweet_criteria, refresh_cursor)
-
 
             if not json or len(json['items_html'].strip()) == 0:
                 break
@@ -179,19 +189,21 @@ class Scraper(object):
             print('No query placed.')
             return
 
+        language = None
         if hasattr(tweet_criteria, 'language'):
             language = 'lang=' + tweet_criteria.language + '&'
-        else:
-            language = 'lang=en-US&'
+        # else:
+        #     language = 'lang=en-US&'
 
         url, headers = Scraper.set_headers(data, language, refresh_cursor)
 
         try:
-            r = req.get(url, headers=headers)
+            res = req.get(url, headers=headers)
         except Exception as e:
             text = 'Twitter weird response. Try to see on browser:'\
                     +'https://twitter.com/search?q=%s&src=typd'
             print(text % urllib.parse.quote(url))
             print('Unexpected error:', sys.exc_info()[0])
+            print(f'stoped in {refresh_cursor}')
             raise ScrapperException(e)
-        return r.json()
+        return res.json()

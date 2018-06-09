@@ -1,6 +1,13 @@
+import logging
+
 import sys, getopt
 
 from scraper import controllers, models
+
+
+logger = logging.getLogger(__file__)
+logging.basicConfig(level=logging.INFO)
+
 
 def main(argv):
 
@@ -37,7 +44,6 @@ def main(argv):
         print(examples)
         return
 
-    exporter = controllers.Exporter()
     try:
         opts, args = getopt.getopt(argv, '', ('username=', 'since=',\
                     'until=', 'query=', 'max-tweets='))
@@ -55,17 +61,31 @@ def main(argv):
                 tweet_criteria.query = arg
             elif opt == '--max-tweets':
                 tweet_criteria.max_tweets = int(arg)
+            elif opt == '--output-file':
+                tweet_criteria.output_filename = arg
+    except Exception as e:
+        import ipdb; ipdb.set_trace()
+        text = 'Unexpected error. Please try again. For more information on'\
+            + ' how to use this script, use the -help argument.'
+        print(text)
 
-        miner = controllers.Scraper()
+    exporter = controllers.Exporter()
+    miner = controllers.Scraper()
+
+    try:
 
         miner.get_tweets(tweet_criteria, buffer = exporter.output_to_file)
 
-        text = 'Finished scraping data. Output file generated'\
-            +' "tweets_gathered.csv"'
+    except Exception as e:
+        text = 'Unexpected error.'
         print(text)
-    except:
-        text = 'Unexpected error. Please try again. For more information on'\
-            + ' how to use this script, use the -help argument.'
+        logger.exception(e)
+    else:
+
+        text = (
+            f'Finished scraping data. Output file generated'
+            ' "{tweet_criteria.output_filename}"'
+        )
         print(text)
     finally:
         exporter.close()

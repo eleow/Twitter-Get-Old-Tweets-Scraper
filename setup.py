@@ -35,7 +35,7 @@ setup(
     install_requires=requirements,
     include_package_data=True,
     name='old_tweets_crawler',
-    packages=find_packages(include=['scraper']),
+    packages=find_packages(include=['old_tweets_crawler']),
     url='https://github.com/arruda/Twitter-Get-Old-Tweets-Scraper',
     version='0.1.0',
     zip_safe=False,

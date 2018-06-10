@@ -21,7 +21,6 @@ class Exporter(object):
             filename = criteria.output_filename
         self.filename = filename
 
-        # self.output = codecs.open(self.filename, 'w+', 'utf-8')
         self.output = open(self.filename, 'w+', encoding='utf-8')
         self.csv_writter = csv.writer(self.output, delimiter=',', quotechar='"')
         if not criteria:

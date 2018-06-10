@@ -2,7 +2,7 @@ import logging
 
 import sys, getopt
 
-from scraper import controllers, models
+from .scraper import controllers, models
 
 
 logger = logging.getLogger(__file__)

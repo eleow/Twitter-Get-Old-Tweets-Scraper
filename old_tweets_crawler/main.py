@@ -25,7 +25,7 @@ def run(tweet_criteria):
             'Finished scraping data. Output file generated'
             f' "{tweet_criteria.output_filename}"'
         )
-        print(text)
+        logger.info(text)
     finally:
         exporter.close()
 

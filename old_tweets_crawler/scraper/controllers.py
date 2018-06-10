@@ -8,6 +8,10 @@ from .models import Tweet, TweetCriteria
 from .exceptions import ScrapperException
 
 
+logger = logging.getLogger(__file__)
+logging.basicConfig(level=logging.INFO)
+
+
 class Exporter(object):
 
     def __init__(self, criteria=None, filename='tweets_gathered.csv'):
@@ -192,18 +196,15 @@ class Scraper(object):
         language = None
         if hasattr(tweet_criteria, 'language'):
             language = 'lang=' + tweet_criteria.language + '&'
-        # else:
-        #     language = 'lang=en-US&'
-
         url, headers = Scraper.set_headers(data, language, refresh_cursor)
 
         try:
             res = req.get(url, headers=headers)
         except Exception as e:
-            text = 'Twitter weird response. Try to see on browser:'\
-                    +'https://twitter.com/search?q=%s&src=typd'
-            print(text % urllib.parse.quote(url))
-            print('Unexpected error:', sys.exc_info()[0])
-            print(f'stoped in {refresh_cursor}')
+            logger.exception(e)
+            text = ('Twitter weird response. Try to see on browser:'
+                    ' f{url}')
+            logger.error(text)
+            logger.error(f'stoped in {refresh_cursor}')
             raise ScrapperException(e)
         return res.json()

@@ -7,7 +7,7 @@ class Tweet(object):
 class TweetCriteria(object):
 
     def __init__(self):
-        self.max_tweets = 100
+        self.max_tweets = 1000
 
     def set_username(self, username):
         self.username = username

@@ -9,6 +9,27 @@ logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.INFO)
 
 
+def run(tweet_criteria):
+    exporter = controllers.Exporter(filename=tweet_criteria.output_filename)
+    miner = controllers.Scraper()
+
+    try:
+        miner.get_tweets(tweet_criteria, buffer=exporter.output_to_file)
+
+    except Exception as e:
+        text = 'Unexpected error.'
+        print(text)
+        logger.exception(e)
+    else:
+        text = (
+            'Finished scraping data. Output file generated'
+            f' "{tweet_criteria.output_filename}"'
+        )
+        print(text)
+    finally:
+        exporter.close()
+
+
 def main(argv):
 
     if len(argv) == 0:
@@ -68,26 +89,7 @@ def main(argv):
             + ' how to use this script, use the -help argument.'
         print(text)
 
-    exporter = controllers.Exporter(filename=tweet_criteria.output_filename)
-    miner = controllers.Scraper()
-
-    try:
-
-        miner.get_tweets(tweet_criteria, buffer = exporter.output_to_file)
-
-    except Exception as e:
-        text = 'Unexpected error.'
-        print(text)
-        logger.exception(e)
-    else:
-
-        text = (
-            'Finished scraping data. Output file generated'
-            f' "{tweet_criteria.output_filename}"'
-        )
-        print(text)
-    finally:
-        exporter.close()
+    run(tweet_criteria)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

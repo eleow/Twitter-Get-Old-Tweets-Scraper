@@ -1,3 +1,4 @@
+import logging
 import csv
 import sys, json, re, codecs, urllib.parse
 import requests as req

@@ -1,4 +1,5 @@
 import logging
+
 import csv
 import sys, json, re, codecs, urllib.parse
 import requests as req
@@ -84,7 +85,7 @@ class Scraper(object):
         return url, headers
 
     @staticmethod
-    def get_tweets(tweet_criteria, buffer = None, buffer_length = 100):
+    def get_tweets(tweet_criteria, buffer = None, buffer_length = 100, verbose=False):
         active = True
         refresh_cursor = ''
         mentions = re.compile('(@\\w*)')
@@ -96,7 +97,7 @@ class Scraper(object):
             return
 
         while active:
-            json = Scraper.get_json_response(tweet_criteria, refresh_cursor)
+            json = Scraper.get_json_response(tweet_criteria, refresh_cursor, verbose)
 
             if not json or len(json['items_html'].strip()) == 0:
                 break
@@ -176,7 +177,7 @@ class Scraper(object):
         return results
 
     @staticmethod
-    def get_json_response(tweet_criteria, refresh_cursor):
+    def get_json_response(tweet_criteria, refresh_cursor, verbose=False):
         data = ''
 
         if hasattr(tweet_criteria, 'username'):
@@ -197,9 +198,14 @@ class Scraper(object):
         language = None
         if hasattr(tweet_criteria, 'language'):
             language = 'lang=' + tweet_criteria.language + '&'
+        # else:
+        #     language = 'lang=en-US&'
+
         url, headers = Scraper.set_headers(data, language, refresh_cursor)
 
         try:
+            if verbose:
+                logger.info(f'get: {url} / headers: {headers}')
             res = req.get(url, headers=headers)
         except Exception as e:
             logger.exception(e)

@@ -9,16 +9,14 @@ logger = logging.getLogger(__file__)
 logging.basicConfig(level=logging.INFO)
 
 
-def run(tweet_criteria):
+def run(tweet_criteria, verbose=False):
     exporter = controllers.Exporter(filename=tweet_criteria.output_filename)
     miner = controllers.Scraper()
 
     try:
-        miner.get_tweets(tweet_criteria, buffer=exporter.output_to_file)
+        miner.get_tweets(tweet_criteria, buffer=exporter.output_to_file, verbose=verbose)
 
     except Exception as e:
-        text = 'Unexpected error.'
-        print(text)
         logger.exception(e)
     else:
         text = (

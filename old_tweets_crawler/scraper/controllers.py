@@ -1,12 +1,13 @@
 import logging
 
 import csv
-import sys, json, re, codecs, urllib.parse
+import re
+import urllib.parse
 import requests as req
 from datetime import datetime
 from pyquery import PyQuery as pq
 
-from .models import Tweet, TweetCriteria
+from .models import Tweet
 from .exceptions import ScrapperException
 
 
@@ -21,8 +22,9 @@ class Exporter(object):
             filename = criteria.output_filename
         self.filename = filename
 
-        self.output = open(self.filename, 'w+', encoding='utf-8')
-        self.csv_writter = csv.writer(self.output, delimiter=',', quotechar='"')
+        self.output = open(self.filename, 'w+', encoding='utf-8', newline='\n')
+        self.csv_writter = csv.writer(
+            self.output, delimiter=',', quotechar='"')
         if not criteria:
             criteria = [
                 'username', 'user_handle', 'date', 'retweets',
@@ -30,7 +32,7 @@ class Exporter(object):
                 'mentions', 'hashtags', 'tweet_id', 'permalink'
             ]
 
-        criteria_sring = ','.join(criteria)
+        # criteria_string = ','.join(criteria)
         self.csv_writter.writerow(criteria)
 
     def output_to_file(self, tweets):
@@ -51,7 +53,7 @@ class Exporter(object):
             ])
 
         self.output.flush()
-        print ('%d tweets added to file' % len(tweets))
+        print('%d tweets added to file' % len(tweets))
 
     def close(self):
         self.output.close()
@@ -84,7 +86,7 @@ class Scraper(object):
         return url, headers
 
     @staticmethod
-    def get_tweets(tweet_criteria, buffer = None, buffer_length = 100, verbose=False):
+    def get_tweets(tweet_criteria, buffer=None, buffer_length=100, verbose=False):
         active = True
         refresh_cursor = ''
         mentions = re.compile('(@\\w*)')
@@ -96,7 +98,14 @@ class Scraper(object):
             return
 
         while active:
-            json = Scraper.get_json_response(tweet_criteria, refresh_cursor, verbose)
+            json = Scraper.get_json_response(
+                tweet_criteria, refresh_cursor, verbose)
+
+            if 'items_html' not in json:
+                # Sorry, die Anzahl deiner Anfragen ist begrenzt
+                # Sorry, the number of your requests is limited
+                print(json['message'])
+                break
 
             if not json or len(json['items_html'].strip()) == 0:
                 break
@@ -114,29 +123,34 @@ class Scraper(object):
                 user_id = _.attr('data-user-id')
                 user_handle = _.attr('data-screen-name')
                 username = _.attr('data-name')
-                text = re.sub(r'\s+', ' ', _('p.js-tweet-text').text()\
-                        .replace('# ', '#').replace('@ ', '@'))
+
+                # quick-fix: remove html tags manually instead of using .text() because some tags are replaced with \n
+                text = re.sub('http', ' http', _('p.js-tweet-text').html())  # add spacing before an URL
+                text = re.sub(r'<.*?>', '', text)
+                # text = re.sub(r'<.*?>', '', _('p.js-tweet-text').html())
+                # text = re.sub(r'\s+', ' ', _('p.js-tweet-text').text()
+                #               .replace('# ', '#').replace('@ ', '@'))
                 retweet_id = 'span.ProfileTweet-action--retweet '\
-                            + 'span.ProfileTweet-actionCount'
-                retweets = int(_(retweet_id).attr('data-tweet-stat-count')\
-                            .replace(',', ''))
+                    + 'span.ProfileTweet-actionCount'
+                retweets = int(_(retweet_id).attr('data-tweet-stat-count')
+                               .replace(',', ''))
                 favorites_id = 'span.ProfileTweet-action--favorite '\
-                            + 'span.ProfileTweet-actionCount'
-                favorites = int(_(favorites_id).attr('data-tweet-stat-count')\
-                            .replace(',', ''))
+                    + 'span.ProfileTweet-actionCount'
+                favorites = int(_(favorites_id).attr('data-tweet-stat-count')
+                                .replace(',', ''))
                 href = 'https://twitter.com' + _.attr('data-permalink-path')
-                raw_date_ms =  int(_('span.js-short-timestamp')\
-                                .attr('data-time'))
+                raw_date_ms = int(_('span.js-short-timestamp')
+                                  .attr('data-time'))
                 lang = _('p.js-tweet-text').attr('lang') or ''
                 tweet_date = _('span._timestamp .js-short-timestamp').text()
                 geological_location = _('span.Tweet-geo').attr('title')\
-                                    if len(_('span.Tweet-geo')) > 0 else ''
+                    if len(_('span.Tweet-geo')) > 0 else ''
 
                 urls = []
                 for link in _('a'):
                     try:
                         urls.append(link.attrib['data-expanded-url'])
-                    except:
+                    except Exception:
                         pass
 
                 tweet = Tweet()
@@ -150,7 +164,7 @@ class Scraper(object):
                 tweet.raw_date_ms = raw_date_ms
                 tweet.date_fromtimestamp = datetime.fromtimestamp(raw_date_ms)
                 tweet.formatted_raw_date = datetime.fromtimestamp(raw_date_ms)\
-                                            .strftime('%a %b %d %X +0000 %Y')
+                    .strftime('%a %b %d %X +0000 %Y')
                 tweet.permalink = href
                 tweet.retweets = retweets
                 tweet.favorites = favorites
@@ -173,6 +187,7 @@ class Scraper(object):
         if buffer and len(results_to_append) > 0:
             buffer(results_to_append)
 
+        print("Total results: %s" % len(results))
         return results
 
     @staticmethod

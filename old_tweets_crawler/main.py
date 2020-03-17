@@ -1,8 +1,8 @@
 import logging
+import sys
+import getopt
 
-import sys, getopt
-
-from .scraper import controllers, models
+from scraper import controllers, models
 
 
 logger = logging.getLogger(__file__)
@@ -12,17 +12,19 @@ logging.basicConfig(level=logging.INFO)
 def run(tweet_criteria, verbose=False):
     exporter = controllers.Exporter(filename=tweet_criteria.output_filename)
     miner = controllers.Scraper()
+    results = None
 
     try:
-        miner.get_tweets(tweet_criteria, buffer=exporter.output_to_file, verbose=verbose)
+        results = miner.get_tweets(tweet_criteria, buffer=exporter.output_to_file, verbose=verbose)
 
     except Exception as e:
         logger.exception(e)
     else:
-        text = (
-            'Finished scraping data. Output file generated'
-            f' "{tweet_criteria.output_filename}"'
-        )
+        # text = (
+        #     'Finished scraping data. Output file generated'
+        #     f' "{tweet_criteria.output_filename}"'
+        # )
+        text = "Finished scraping data. Output file generated %s with %i %s" % (tweet_criteria.output_filename, len(results), "tweets" if len(results) > 1 else "tweet")
         logger.info(text)
     finally:
         exporter.close()
@@ -64,7 +66,7 @@ def main(argv):
         return
 
     try:
-        opts, args = getopt.getopt(argv, '', ('username=', 'since=',\
+        opts, args = getopt.getopt(argv, '', ('username=', 'since=',
                     'until=', 'query=', 'max-tweets=', 'output-file='))
 
         tweet_criteria = models.TweetCriteria()
@@ -82,12 +84,15 @@ def main(argv):
                 tweet_criteria.max_tweets = int(arg)
             elif opt == '--output-file':
                 tweet_criteria.output_filename = arg
+
+        run(tweet_criteria)
+
     except Exception as e:
         text = 'Unexpected error. Please try again. For more information on'\
             + ' how to use this script, use the -help argument.'
         print(text)
+        print(e)
 
-    run(tweet_criteria)
 
 if __name__ == '__main__':
     main(sys.argv[1:])

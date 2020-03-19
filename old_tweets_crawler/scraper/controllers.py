@@ -124,6 +124,9 @@ class Scraper(object):
                 user_handle = _.attr('data-screen-name')
                 username = _.attr('data-name')
 
+                # quick-fix: sometimes _('p.js-tweet-text') is none, so we skip it
+                if _('p.js-tweet-text').html() is None: continue
+
                 # quick-fix: remove html tags manually instead of using .text() because some tags are replaced with \n
                 text = re.sub('http', ' http', _('p.js-tweet-text').html())  # add spacing before an URL
                 text = re.sub(r'<.*?>', '', text)
